@@ -40,4 +40,11 @@
 
     <!-- Error Message -->
     <string id="30600">Netzwerk Fehler</string>
+
+
+    <!-- Recording related messages -->
+    <string id="30701">Downloadverzeichnis</string>
+    <string id="30702">Pfad zu streamripper</string>
+    <string id="30703">Format der Dateinamen</string>
+    <string id="30704">Radiosender aufnehmen</string>
 </strings>

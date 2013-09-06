@@ -18,6 +18,9 @@
 #
 from xbmcswift2 import Plugin, xbmc
 from resources.lib.api import RadioApi, RadioApiError
+import xbmcgui
+import subprocess
+
 
 STRINGS = {
     'editorials_recommendations': 30100,
@@ -38,7 +41,8 @@ STRINGS = {
     'name': 30501,
     'thumbnail': 30502,
     'stream_url': 30503,
-    'add_custom': 30504
+    'add_custom': 30504,
+    'record_station': 30704
 }
 
 
@@ -175,15 +179,41 @@ def show_stations_by_category(category_type, category):
     return __add_stations(stations)
 
 
-@plugin.route('/station/<station_id>')
-def get_stream_url(station_id):
+def raw_stream_url(station_id):
     if my_stations.get(station_id, {}).get('is_custom', False):
         stream_url = my_stations[station_id]['stream_url']
     else:
         station = radio_api.get_station_by_station_id(station_id)
         stream_url = station['stream_url']
+    return stream_url
+
+@plugin.route('/station/<station_id>')
+def get_stream_url(station_id):
+    raw_stream_url = stream_url(station_id)
     __log('get_stream_url result: %s' % stream_url)
     return plugin.set_resolved_url(stream_url)
+
+@plugin.route('/record/<station_id>')
+def record(station_id):
+    stream_url = raw_stream_url(station_id)
+    
+    streamripper = plugin.get_setting('streamripper')
+    download_dir = plugin.get_setting('download_dir')
+    file_format = plugin.get_setting('file_format')
+
+    dialog = xbmcgui.Dialog()
+
+    if not download_dir:
+        dialog.ok('Radio Record', 'Please set the download directory first')
+        return
+        
+    exit_code = subprocess.call([streamripper, stream_url, '-d', download_dir, '-t'])
+    
+    if exit_code == 0:
+        dialog.ok('Radio Record' 'Record of ' + station_id + ' has stopped')
+    else:
+        dialog.ok('Radio Record', ('Record of %s has failed with error code ' % station_id) + exit_code) 
+
 
 
 def __add_stations(stations, add_custom=False):
@@ -210,6 +240,11 @@ def __add_stations(stations, add_custom=False):
                 'XBMC.RunPlugin(%s)' % plugin.url_for('custom_my_station',
                                                       station_id=station_id),
             ))
+        context_menu.append((
+            _('record_station'),
+            'XBMC.RunPlugin(%s)' % plugin.url_for('record', 
+                                                  station_id=station_id),
+        ))
         items.append({
             'label': station.get('name', ''),
             'thumbnail': station['thumbnail'],

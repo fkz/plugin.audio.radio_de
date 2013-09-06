@@ -1,3 +1,6 @@
+2.2.2 (06.10.2013)
+    - allow record with streamripper
+
 2.2.1 (11.08.2013)
     - updated translations
     - added new addon.xml tags
