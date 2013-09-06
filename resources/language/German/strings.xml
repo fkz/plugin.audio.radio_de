@@ -47,4 +47,8 @@
     <string id="30702">Pfad zu streamripper</string>
     <string id="30703">Format der Dateinamen</string>
     <string id="30704">Radiosender aufnehmen</string>
+    <string id="30705">Radiosender aufnehmen (einzelne Datei)</string>
+    <string id="30706">Aufnahmen werden beendet</string>
+    <string id="30707">Zur Zeit keine Aufnahme aktiv</string>
+    <string id="30708">Aufnahmen beenden</string>
 </strings>

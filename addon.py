@@ -42,7 +42,11 @@ STRINGS = {
     'thumbnail': 30502,
     'stream_url': 30503,
     'add_custom': 30504,
-    'record_station': 30704
+    'record_station': 30704,
+    'record_station_single': 30705,
+    'finnish_record_succesful': 30706,
+    'no_records': 30707,
+    'stop_record': 30708
 }
 
 
@@ -79,6 +83,9 @@ def show_root_menu():
          'path': plugin.url_for('search')},
         {'label': _('my_stations'),
          'path': plugin.url_for('show_my_stations')},
+        {'label': _('stop_record'),
+         'path': plugin.url_for('finnish_record')}
+
     )
     return plugin.finish(items)
 
@@ -187,16 +194,26 @@ def raw_stream_url(station_id):
         stream_url = station['stream_url']
     return stream_url
 
+def raw_station_name(station_id):
+    if my_stations.get(station_id, {}).get('is_custom', False):
+        name = my_stations[station_id].get('name')
+    else:
+        station = radio_api.get_station_by_station_id(station_id)
+        name = station.get('name')
+    return name
+    
+
 @plugin.route('/station/<station_id>')
 def get_stream_url(station_id):
-    raw_stream_url = stream_url(station_id)
+    stream_url = raw_stream_url(station_id)
     __log('get_stream_url result: %s' % stream_url)
     return plugin.set_resolved_url(stream_url)
 
-@plugin.route('/record/<station_id>')
-def record(station_id):
+@plugin.route('/record/<station_id>/<args>')
+def record(station_id, args):
     stream_url = raw_stream_url(station_id)
-    
+    name = raw_station_name(station_id)
+
     streamripper = plugin.get_setting('streamripper')
     download_dir = plugin.get_setting('download_dir')
     file_format = plugin.get_setting('file_format')
@@ -207,14 +224,26 @@ def record(station_id):
         dialog.ok('Radio Record', 'Please set the download directory first')
         return
         
-    exit_code = subprocess.call([streamripper, stream_url, '-d', download_dir, '-t'])
+    if args:
+        arguments = ['-a']
+    else:
+        arguments = []
+
+    exit_code = subprocess.call([streamripper, stream_url, '-d', download_dir, '-t'] + arguments)
     
     if exit_code == 0:
-        dialog.ok('Radio Record' 'Record of ' + station_id + ' has stopped')
+        plugin.notify('Record of ' + station_name + ' has stopped')
     else:
-        dialog.ok('Radio Record', ('Record of %s has failed with error code ' % station_id) + exit_code) 
+        plugin.notify(('Record of ' + station_name + ' has failed with error code ') + exit_code) 
 
 
+@plugin.route('/finnish_record')
+def finnish_record():
+    exit_code = subprocess.call(['killall', 'streamripper'])
+    if exit_code == 0:
+        plugin.notify (_('finnish_record_succesful'))
+    else:
+        plugin.notify (_('no_records'))
 
 def __add_stations(stations, add_custom=False):
     __log('__add_stations started with %d items' % len(stations))
@@ -243,8 +272,14 @@ def __add_stations(stations, add_custom=False):
         context_menu.append((
             _('record_station'),
             'XBMC.RunPlugin(%s)' % plugin.url_for('record', 
-                                                  station_id=station_id),
+                                                  station_id=station_id,
+                                                  args=''),
         ))
+        context_menu.append((
+            _('record_station_single'),
+            'XBMC.RunPlugin(%s)' % plugin.url_for('record',
+                                                  station_id=station_id,
+                                                  args='-a')
         items.append({
             'label': station.get('name', ''),
             'thumbnail': station['thumbnail'],
