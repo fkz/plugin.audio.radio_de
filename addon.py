@@ -224,17 +224,18 @@ def record(station_id, args):
         dialog.ok('Radio Record', 'Please set the download directory first')
         return
         
-    if args:
+    if args == '-a':
         arguments = ['-a']
     else:
         arguments = []
 
+    plugin.notify('Start record ' + name)
     exit_code = subprocess.call([streamripper, stream_url, '-d', download_dir, '-t'] + arguments)
     
     if exit_code == 0:
-        plugin.notify('Record of ' + station_name + ' has stopped')
+        plugin.notify('Record of ' + name + ' has stopped')
     else:
-        plugin.notify(('Record of ' + station_name + ' has failed with error code ') + exit_code) 
+        plugin.notify(('Record of ' + name + ' has failed with error code ') + exit_code) 
 
 
 @plugin.route('/finnish_record')
@@ -273,13 +274,14 @@ def __add_stations(stations, add_custom=False):
             _('record_station'),
             'XBMC.RunPlugin(%s)' % plugin.url_for('record', 
                                                   station_id=station_id,
-                                                  args=''),
+                                                  args='none'),
         ))
         context_menu.append((
             _('record_station_single'),
             'XBMC.RunPlugin(%s)' % plugin.url_for('record',
                                                   station_id=station_id,
                                                   args='-a')
+        ))
         items.append({
             'label': station.get('name', ''),
             'thumbnail': station['thumbnail'],
